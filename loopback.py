@@ -6,19 +6,28 @@
 #############################################################################################################################
 
 # Import required packages
+import os
 from flask import Flask, request, jsonify
 from netmiko import ConnectHandler
 import logging
 
+# access github secrets
+devicetype = os.environ.get('DEVICE_TYPE')
+ip = os.environ.get('IP')
+username = os.environ.get('USERNAME')
+password = os.environ.get('PASSWORD')
+
+
 # Creating a flask application
 app = Flask(__name__)
+app.config.from_object('config.Config')
 
 # Connection string
 login_configs = {
-    "device_type":"cisco_xr",
-    "ip":"sandbox-iosxr-1.cisco.com",
-    "username":"admin",
-    "password":"C1sco12345",
+    f"device_type":{devicetype},
+    f"ip":{ip},
+    f"username":{username},
+    f"password":{password},
     "port":22,
     "verbose":True,
 }
@@ -30,11 +39,13 @@ def connect_ciscobox():
         connectivity.enable()
         logging.basicConfig(filename='app.log',filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
         logging.info('Admin logged in')
+        return connectivity
+        
     except Exception as e:
         error=f"unable to connect due to this error : {e}"
         logging.basicConfig(filename='app.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.error(error)
-    return connectivity
+        return {'message': str(e)}, 500
 
 # Module to list available interfaces
 def show_intefaces():
@@ -47,12 +58,15 @@ def show_intefaces():
         connectivity.disconnect()
         logging.basicConfig(filename='app.log',filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
         logging.info('listed available interfaces')
+        return {'message': 'Listed interfaces successfully:', 'response': output}, 200
+    
     except Exception as e:
         error=f"unable to connect due to this error : {e}"
         output = error
         logging.basicConfig(filename='app.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s')
         logging.error(error)
-    return output
+        return {'message': str(e)}, 500
+    
 
 # Module to create Loopback in cisco device
 def create_loopback(interface_number,desc,ipaddress):
@@ -93,6 +107,7 @@ def delete_loopback(interface_number):
         logging.basicConfig(filename='app.log',filemode='a', format='%(asctime)s - %(message)s', level=logging.INFO)
         logging.info('Loopback deleted successfully')
         return {'message': 'Loopback Configuration deleted successfully:', 'response': response}, 200
+    
     except Exception as e:
         error=f"unable to connect due to this error : {e}"
         response=error
@@ -114,7 +129,6 @@ def loopback_configuration():
     desc=payload.get('description')
     
     response = create_loopback(interface_number,desc,ipaddress)
-
     return jsonify({'response': response})
 
 # Route to List all the interfaces
@@ -122,7 +136,6 @@ def loopback_configuration():
 def list_interfaces():
     
     result = show_intefaces()
-
     return jsonify({'result': result})
 
 # Route to delete the loopback based on passed payload
@@ -133,7 +146,6 @@ def remove_loopback():
     interface_number = payload.get('interface_number')
     
     response = delete_loopback(interface_number)
-
     return jsonify({'response': response})
 
 if __name__ == '__main__':
