@@ -183,7 +183,7 @@ def netconf_delete_loopback():
 
 # Route to show loopback via netconf with the passed payload
 @app.route('/netconf_show_loopback', methods=['POST'])
-def netconf_delete_loopback():
+def netconf_show_loopback():
     payload = request.json
     interface_number = payload.get('interface_number')
 
