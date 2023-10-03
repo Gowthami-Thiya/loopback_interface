@@ -132,7 +132,7 @@ def delete_loopback_via_netconf(interface_number):
     
 # Module to list configured interface
 def show_loopback_via_netconf(interface_number):
-    session=connect_cisco_via_netconf(interface_number)
+    session=connect_cisco_via_netconf()
 
     try:
         show_loopback = """
