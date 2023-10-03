@@ -20,7 +20,6 @@ password = os.environ.get('PASSWORD')
 
 # Creating a flask application
 app = Flask(__name__)
-app.config.from_object('config.Config')
 
 # Connection string
 login_configs = {
@@ -31,6 +30,8 @@ login_configs = {
     "port":22,
     "verbose":True,
 }
+
+DRY_RUN = False
 
 # Module to connect with cisco sandbox
 def connect_ciscobox():
@@ -123,25 +124,49 @@ def delete_loopback(interface_number):
 @app.route('/loopback_configuration', methods=['POST'])
 def loopback_configuration():
     payload = request.json
-    #device_params=connectionstring(data)
-    ipaddress = payload.get('loopback_ip')
-    interface_number = payload.get('interface_number')
-    desc=payload.get('description')
-    
-    response = create_loopback(interface_number,desc,ipaddress)
-    return jsonify({'response': response})
+    if DRY_RUN == True:
+        final="Dry Run"
+        response={
+            "message":final,
+            "output":payload
+        }
+
+        return jsonify({'response': response})
+    else:
+        #device_params=connectionstring(data)
+        ipaddress = payload.get('loopback_ip')
+        interface_number = payload.get('interface_number')
+        desc=payload.get('description')
+        
+        response = create_loopback(interface_number,desc,ipaddress)
+        return jsonify({'response': response})
 
 # Route to List all the interfaces
 @app.route('/list_interfaces', methods=['GET'])
 def list_interfaces():
-    
-    result = show_intefaces()
-    return jsonify({'result': result})
+    if DRY_RUN == True:
+        final="Dry Run"
+        response={
+            "message":final
+        }
+
+        return jsonify({'response': response})
+    else:
+        result = show_intefaces()
+        return jsonify({'result': result})
 
 # Route to delete the loopback based on passed payload
 @app.route('/remove_loopback', methods=['POST'])
 def remove_loopback():
     payload = request.json
+    if DRY_RUN == True:
+        final="Dry Run"
+        response={
+            "message":final,
+            "output":payload
+        }
+
+        return jsonify({'response': response})
     #device_params=connectionstring(data)
     interface_number = payload.get('interface_number')
     
